@@ -67,6 +67,7 @@ struct SSbieAPI
 		traceBufferLen = 0;
 
 		SbieMsgDll = NULL;
+		ProcessListInitialized = false;
 
 		SvcLock = 0;
 	}
@@ -102,6 +103,7 @@ struct SSbieAPI
 	ULONG traceBufferLen;
 
 	HMODULE SbieMsgDll;
+	bool ProcessListInitialized;
 
 	mutable volatile LONG   SvcLock;
 	mutable MSG_HEADER*		SvcReq;
@@ -413,6 +415,7 @@ SB_STATUS CSbieAPI::Disconnect()
 
 	m_SandBoxes.clear();
 	m_BoxedProxesses.clear();
+	m->ProcessListInitialized = false;
 	m_bBoxesDirty = true;
 
 	emit StatusChanged();
@@ -1582,7 +1585,13 @@ SB_STATUS CSbieAPI::UpdateProcesses(int iKeep, bool bAllSessions)
 	}
 
 	delete[] boxed_pids;
+	m->ProcessListInitialized = true;
 	return SB_OK;
+}
+
+bool CSbieAPI::IsProcessListInitialized() const
+{
+	return m->ProcessListInitialized;
 }
 
 bool CSbieAPI::HasProcesses(const QString& BoxName)
@@ -2465,14 +2474,17 @@ bool CSbieAPI::TestSignature(const QByteArray& Data, const QByteArray& Signature
 
 bool CSbieAPI::GetLog()
 {
-	wchar_t* Buffer[4*1024];
-	ULONG Length = ARRAYSIZE(Buffer);
+	WCHAR Buffer[4 * 1024];
 
 	ULONG MsgCode = 0;
 	ULONG ProcessId = 0;
 	ULONG MessageNum = m->lastMessageNum;
 
-	__declspec(align(8)) UNICODE_STRING64 msgtext = { 0, (USHORT)Length, (ULONG64)Buffer };
+	__declspec(align(8)) UNICODE_STRING64 msgtext = {
+		0,
+		(USHORT)sizeof(Buffer),
+		(ULONG64)(ULONG_PTR)Buffer
+	};
 	__declspec(align(8)) ULONG64 parms[API_NUM_ARGS];
 	API_GET_MESSAGE_ARGS *args = (API_GET_MESSAGE_ARGS*)parms;
 
@@ -2665,7 +2677,7 @@ SB_STATUS CSbieAPI::ImBoxCreate(CSandBox* pBox, quint64 uSizeKb, const QString& 
 	return SB_OK;
 }
 
-SB_STATUS CSbieAPI::ImBoxMount(CSandBox* pBox, const QString& Password, bool bProtect, bool bAutoUnmount)
+SB_STATUS CSbieAPI::ImBoxMount(CSandBox* pBox, const QString& Password, int iProtect, bool bAutoUnmount)
 {
 	std::wstring root = pBox->GetRegRoot().toStdWString();
 	if(root.length() >= MAX_REG_ROOT_LEN)
@@ -2683,8 +2695,8 @@ SB_STATUS CSbieAPI::ImBoxMount(CSandBox* pBox, const QString& Password, bool bPr
 	req->h.length = req_len;
 	req->h.msgid = MSGID_IMBOX_MOUNT;
 	wcscpy(req->password, password.c_str());
-	req->protect_root = bProtect;
-	req->admin_only = pBox->GetBool("ProtectAdminOnly", true, true, true);
+	req->protect_root = iProtect != 0;
+	req->admin_only = iProtect == 2 ? 0 : pBox->GetBool("ProtectAdminOnly", true, true, true);
 	req->auto_unmount = bAutoUnmount;
 	wcscpy(req->reg_root, root.c_str());
 	wcscpy(req->file_root, file_root.c_str());

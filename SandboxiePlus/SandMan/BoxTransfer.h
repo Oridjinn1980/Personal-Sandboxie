@@ -25,6 +25,7 @@ public:
 		QString ArchiveName;    // Original name in archive
 		QString SourceFile;     // Source archive file path
 		QString Password;       // Password for this archive (if encrypted)
+		quint64 ImageSize = 0;	// Size of the box image (for conflict detection)
 	};
 	void LoadMultiArchiveContents(const QList<SImportBoxInfo>& boxes, bool hasGlobalConfig);
 
@@ -41,6 +42,7 @@ public:
 		QString ImportName;     // Name to import as
 		QString SourceFile;     // Source archive file path
 		QString Password;       // Password for this archive
+		quint64 ImageSize = 0;	// Size of the box image (for conflict detection)
 	};
 	QList<SImportEntry> GetImportEntries() const;
 
@@ -51,6 +53,7 @@ private slots:
 	void OnSelectAll();
 	void OnSelectNone();
 	void OnItemChanged(QTreeWidgetItem* item, int column);
+	void OnReadAliases(bool checked);
 
 private:
 	void UpdateConflictIndicators();
@@ -58,9 +61,11 @@ private:
 	EMode m_Mode;
 	QTreeWidget* m_pBoxTree;
 	QCheckBox* m_pGlobalConfig;
+	QCheckBox* m_pReadAliases;
 	QCheckBox* m_pSeparateFiles;
 	QPushButton* m_pSelectAll;
 	QPushButton* m_pSelectNone;
+	QMap<QString, QMap<QString, QString>> m_ArchiveAliases;
 };
 
 void ExportMultiBoxes(QWidget* parent, const QList<CSandBoxPtr>& SandBoxes = QList<CSandBoxPtr>());

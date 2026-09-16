@@ -65,6 +65,7 @@ public:
 	virtual SB_STATUS		CreateBox(const QString& BoxName, bool bReLoad = true);
 
 	virtual SB_STATUS		UpdateProcesses(int iKeep, bool bAllSessions);
+	bool					IsProcessListInitialized() const;
 
 	virtual QMap<QString, CSandBoxPtr> GetAllBoxes() { return m_SandBoxes; }
 	virtual QMap<quint32, CBoxedProcessPtr> GetAllProcesses() { return m_BoxedProxesses; }
@@ -129,7 +130,7 @@ public:
 
 	// Mount Manager
 	virtual SB_STATUS		ImBoxCreate(CSandBox* pBox, quint64 uSizeKb, const QString& Password = QString());
-	virtual SB_STATUS		ImBoxMount(CSandBox* pBox, const QString& Password = QString(), bool bProtect = false, bool bAutoUnmount = false);
+	virtual SB_STATUS		ImBoxMount(CSandBox* pBox, const QString& Password = QString(), int iProtect = 0, bool bAutoUnmount = false);
 	virtual SB_STATUS		ImBoxUnmount(CSandBox* pBox);
 	virtual SB_RESULT(QStringList) ImBoxEnum();
 	virtual SB_RESULT(QVariantMap) ImBoxQuery(const QString& Root = QString());
